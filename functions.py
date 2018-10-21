@@ -79,7 +79,7 @@ class YaoLiuLin:
         """n = 30, x_i \in [-1.28, 1.28], f_min = 0"""
 
         def inner_f(i):
-            return i * (x[i] ** 4) + random.random()
+            return (i + 1) * (x[i] ** 4)
 
         return sum(map(inner_f, range(len(x))))
 
@@ -98,13 +98,18 @@ class YaoLiuLin:
         """n = 30, x_i \in [-32, 32], f_min = 0"""
         n = len(x)
         sum1 = sum(map(squared, x))
+        term1 = -20 * exp(-0.2 * sqrt(sum1 / n))
+
         sum2 = sum(map(lambda x_i: cos(2 * pi * x_i), x))
-        return 20 + e - 20 * exp(-0.2 * sqrt(sum1 / n)) - exp(sum2 / n)
+        term2 = -exp(sum2 / n)
+        return 20 + e + term1 + term2
 
     @staticmethod
     def f11(x):
         """n = 30, x_i \in [-600, 600], f_min = 0"""
-        return 0
+        term1 = sum(map(squared, x)) / 4000.0
+        term2 = prod(map(lambda i: cos(x[i] / sqrt(i + 1)), x))
+        return 1 + term1 - term2
 
     @staticmethod
     def f12(x):
@@ -139,7 +144,10 @@ class YaoLiuLin:
     @staticmethod
     def f18(x):
         """n = 2, x_i \in [-2, 2], f_min = 3"""
-        return 0
+        x1, x2 = x
+        t1 = 1 + ((x1 + x2 + 1) ** 2) * (19 - 14 * x1 + 3 * (x1 ** 2) - 14 * x2 + 6 * x1 * x2 + 3 * (x2 ** 2))
+        t2 = 30 + ((2 * x1 - 3 * x2) ** 2) * (18 - 32 * x1 + 12 * (x1 ** 2) + 48 * x2 - 36 * x1 * x2 + 27 * (x2 ** 2))
+        return t1 * t2
 
     @staticmethod
     def f19(x):

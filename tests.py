@@ -1,7 +1,8 @@
 import random
 from unittest import TestCase
 from typing import List, Tuple
-from .algorithms import genetic_algorithm
+from algorithms import genetic_algorithm
+from functions import *
 
 BinaryIndividual = Tuple[int]
 RealIndividual = Tuple[float]
@@ -70,3 +71,41 @@ class GATestCase(TestCase):
             return select(old_population + new_population, fitness_by_individual, number=len(old_population))
 
         genetic_algorithm(50, initialize, fitness, select, crossover, mutation, replace)
+
+
+class YaoLiuLinTestCase(TestCase):
+    def test_f1(self):
+        self.assertEqual(YaoLiuLin.f1((0,) * 30), 0)
+
+    def test_f2(self):
+        self.assertEqual(YaoLiuLin.f2((0,) * 30), 0)
+
+    def test_f3(self):
+        self.assertEqual(YaoLiuLin.f3((0,) * 30), 0)
+
+    def test_f4(self):
+        self.assertEqual(YaoLiuLin.f4((0,) * 30), 0)
+
+    def test_f5(self):
+        self.assertEqual(YaoLiuLin.f5((1,) * 30), 0)
+
+    def test_f6(self):
+        self.assertEqual(YaoLiuLin.f6((0,) * 30), 0)
+
+    def test_f7(self):
+        self.assertEqual(YaoLiuLin.f7((0,) * 30), 0)
+
+    def test_f8(self):
+        self.assertAlmostEqual(YaoLiuLin.f8((420.9687,) * 30), -12569.5, places=1)
+
+    def test_f9(self):
+        self.assertEqual(YaoLiuLin.f9((0,) * 30), 0)
+
+    def test_f10(self):
+        self.assertAlmostEqual(YaoLiuLin.f10((0,) * 30), 0)
+
+    def test_f11(self):
+        self.assertEqual(YaoLiuLin.f11((0,) * 30), 0)
+
+    def test_f18(self):
+        self.assertEqual(YaoLiuLin.f18((0, -1)), 3)
