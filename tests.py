@@ -9,7 +9,7 @@ class GenerationTerminator:
         self.num_generations = num_generations
         self.generation = 0
 
-    def test(self, old_pop, new_pop) -> bool:
+    def test(self, population) -> bool:
         self.generation += 1
         return self.generation >= self.num_generations
 
