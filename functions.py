@@ -112,7 +112,7 @@ class YaoLiuLin:
     def f11(x):
         """n = 30, x_i \in [-600, 600], f_min = 0"""
         term1 = sum(map(squared, x)) / 4000.0
-        term2 = prod(map(lambda i: cos(x[i] / sqrt(i + 1)), x))
+        term2 = prod(map(lambda i: cos(x[i] / sqrt(i + 1)), range(len(x))))
         return 1 + term1 - term2
 
     @staticmethod
