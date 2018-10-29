@@ -80,7 +80,7 @@ def differential_evolution(
 def particle_swarm_optimization(
         terminate_fn: Callable[[Population], bool],
         initialize_fn: Callable[[], Population],
-        velocity_initialize_fn: [Callable[], Tuple[float]],
+        velocity_initialize_fn: Callable[[], Tuple[float]],
         fitness_fn: Callable[[Individual], float],
         current_weight: float = 1.0, previous_weight: float = 2.0, global_weight: float = 2.0,
 ) -> Population:
