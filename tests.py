@@ -1,32 +1,19 @@
-import random
 from unittest import TestCase
-from typing import List, Tuple
+from typing import List
 from algorithms import genetic_algorithm, Individual
+from terminators import *
+from observers import *
 from functions import *
-
-
-class GenerationTerminator:
-    def __init__(self, num_generations):
-        self.num_generations = num_generations
-        self.generation = 0
-
-    def test(self, population) -> bool:
-        self.generation += 1
-        return self.generation >= self.num_generations
 
 
 class GATestCase(TestCase):
     def test_simple_real(self):
-        term = GenerationTerminator(50)
-
-        def initialize(population_size=4, individual_size=5) -> List[Individual]:
+        def initialize(population_size=25, individual_size=5) -> List[Individual]:
             return [tuple(float(random.uniform(0, 1)) for _ in range(individual_size)) for _ in range(population_size)]
 
-        def fitness(individual) -> float:
-            return sum(individual) ** 2
-
         def select(population, fitness_by_individual, number=2) -> List[Individual]:
-            weights = [fitness_by_individual[individual] for individual in population]
+            max_fitness = max(fitness_by_individual.values())
+            weights = [max_fitness - fitness_by_individual[individual] for individual in population]
             return random.choices(population, weights, k=number)
 
         def crossover(parents, crossover_rate=0.1) -> List[Individual]:
@@ -47,9 +34,11 @@ class GATestCase(TestCase):
             return tuple(mutate(bit) if random.uniform(0, 1) <= mutation_rate else bit for bit in individual)
 
         def replace(old_population, new_population, fitness_by_individual) -> List[Individual]:
-            return select(old_population + new_population, fitness_by_individual, number=len(old_population))
+            # return select(old_population + new_population, fitness_by_individual, number=len(old_population))
+            return new_population
 
-        genetic_algorithm(term.test, initialize, fitness, select, crossover, mutation, replace)
+        genetic_algorithm(NoImprovementsTerminator(10, 0.01), BestIndividualPrinter(), initialize, YaoLiuLin.f1, select,
+                          crossover, mutation, replace)
 
 
 class YaoLiuLinTestCase(TestCase):

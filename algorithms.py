@@ -7,7 +7,8 @@ PopulationFitness = Dict[Individual, float]
 
 
 def genetic_algorithm(
-        terminate_fn: Callable[[Population], bool],
+        terminate_fn: Callable[[Population, PopulationFitness], bool],
+        observe_fn: Callable[[Population, PopulationFitness], None],
         initialize_fn: Callable[[], Population],
         fitness_fn: Callable[[Individual], float],
         select_fn: Callable[[Population, PopulationFitness], Population],
@@ -21,7 +22,7 @@ def genetic_algorithm(
 
     while True:
         all_children = []
-        while len(all_children) != population_size:
+        while len(all_children) <= population_size:
             parents = select_fn(population, fitness_by_individual)
             children = crossover_fn(parents)
             for child in children:
@@ -32,17 +33,19 @@ def genetic_algorithm(
         population = replace_fn(population, all_children, fitness_by_individual)
         fitness_by_individual = {individual: fitness_by_individual[individual] for individual in population}
 
-        if terminate_fn(population):
+        observe_fn(population, fitness_by_individual)
+        if terminate_fn(population, fitness_by_individual):
             break
 
     return population
 
 
 def differential_evolution(
-        terminate_fn: Callable[[Population], bool],
+        terminate_fn: Callable[[Population, PopulationFitness], bool],
+        observe_fn: Callable[[Population, PopulationFitness], None],
         initialize_fn: Callable[[], Population],
         fitness_fn: Callable[[Individual], float],
-        crossover_rate: float, differential_weight: float
+        crossover_rate: float, differential_weight: float,
 ) -> Population:
     population = initialize_fn()
     fitness_by_individual = {individual: fitness_fn(individual) for individual in population}
@@ -71,14 +74,16 @@ def differential_evolution(
         fitness_by_individual = {individual: fitness_by_individual[individual] for individual in new_population}
         population = new_population
 
-        if terminate_fn(population):
+        observe_fn(population, fitness_by_individual)
+        if terminate_fn(population, fitness_by_individual):
             break
 
     return population
 
 
 def particle_swarm_optimization(
-        terminate_fn: Callable[[Population], bool],
+        terminate_fn: Callable[[Population, PopulationFitness], bool],
+        observe_fn: Callable[[Population, PopulationFitness], None],
         initialize_fn: Callable[[], Population],
         velocity_initialize_fn: Callable[[], Tuple[float]],
         fitness_fn: Callable[[Individual], float],
@@ -123,7 +128,8 @@ def particle_swarm_optimization(
                     global_best = new_position
             population[particle] = new_position
 
-        if terminate_fn(population):
+        observe_fn(population, fitness_by_individual)
+        if terminate_fn(population, fitness_by_individual):
             break
 
     return population
