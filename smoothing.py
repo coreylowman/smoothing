@@ -4,16 +4,8 @@ import random
 from math import sqrt
 
 
-def random_unit_vector(n):
-    vec = [random.gauss(0, 1) for _ in range(n)]
-    mag = sqrt(sum(x ** 2 for x in vec))
-    return tuple(x / mag for x in vec)
-
-
-def random_neighbor_of(x, r):
-    n = len(x)
-    offset = random_unit_vector(n)
-    return tuple(x[i] + r * offset[i] for i in range(n))
+def magnitude(vec):
+    return sqrt(sum(x ** 2 for x in vec))
 
 
 class SphereSmoother:
@@ -27,9 +19,17 @@ class SphereSmoother:
         self.reduce_pct = reduce_pct
 
     def smoothed_fitness_fn(self, x):
-        points = [random_neighbor_of(x, self.radius) for _ in range(self.num_points)]
+        points = [self._random_neighbor_of(x, self.radius) for _ in range(self.num_points)]
         points.append(x)
         return sum(map(self.fitness_fn, points)) / len(points)
+
+    @staticmethod
+    def _random_neighbor_of(x, r):
+        n = len(x)
+        offset = tuple(random.gauss(0, 1) for _ in range(n))
+        mag = magnitude(offset)
+        length = r * (random.uniform(0, 1) ** (1 / n))
+        return tuple(x[i] + length * offset[i] / mag for i in range(n))
 
     def reduce_size(self):
         self.radius = self.reduce_pct * self.radius
