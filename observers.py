@@ -52,7 +52,8 @@ class Population3DPlotter:
                 self.Z[i, j] = f((self.X[i, j], self.Y[i, j]))
 
         plt.ion()
-        fig = plt.figure()
+        fig = plt.figure(figsize=(10, 10))
+        fig.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0, hspace=0)
         self.ax = fig.gca(projection='3d')
         self.ax.view_init(90, 0)
 
@@ -62,6 +63,6 @@ class Population3DPlotter:
 
         xs = list(map(lambda i: i[0], population))
         ys = list(map(lambda i: i[1], population))
-        self.ax.plot(xs, ys, 'go')
+        self.ax.plot(xs, ys, 'kx', markersize=1)
 
         plt.pause(0.0001)
