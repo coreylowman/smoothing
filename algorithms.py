@@ -45,42 +45,56 @@ def genetic_algorithm(
 def differential_evolution(
         terminate_fn: Callable[[Population, PopulationFitness], bool],
         observe_fn: Callable[[Population, PopulationFitness], None],
-        initialize_fn: Callable[[], Population],
         fitness_fn: Callable[[Individual], float],
-        crossover_rate: float, differential_weight: float,
+        mins: List[float], maxs: List[float],
+        population_size: int, crossover_rate: float, F: float,
 ) -> Individual:
-    population = initialize_fn()
-    fitness_by_individual = {individual: fitness_fn(individual) for individual in population}
+    """Differential Evolution – A Simple and Efficient Heuristic for Global Optimization over Continuous Spaces"""
+
+    population = []
+    fitnesses = []
+
+    D = len(mins)
+
+    for i in range(population_size):
+        individual = numpy.zeros(D)
+        for d in range(D):
+            individual[d] = random.uniform(mins[d], maxs[d])
+        population.append(individual)
+        fitnesses.append(fitness_fn(individual))
 
     while True:
-        new_population = []
         for i, individual in enumerate(population):
-            other_individuals = list(range(len(population)))
-            other_individuals.remove(i)
-            a, b, c = random.sample(other_individuals, 3)
+            other_individuals = set(range(population_size)) - {i}
+            r1, r2, r3 = random.sample(other_individuals, 3)
+            rj = random.randrange(0, D)
+            x_r1, x_r2, x_r3 = population[r1], population[r2], population[r3]
 
-            new_individual = list(individual)
-            j_rand = random.randrange(len(individual))
-            for j in range(len(individual)):
-                mutated = a[j] + differential_weight * (b[j] - c[c])
-                trial = mutated if random.uniform(0, 1) <= crossover_rate or j == j_rand else individual[j]
-                new_individual[j] = trial
-            new_individual = type(individual)(new_individual)
-            fitness_by_individual[new_individual] = fitness_fn(new_individual)
+            mutant = x_r1 + F * (x_r2 - x_r3)
+            trial = individual.copy()
+            for j in range(D):
+                if random.uniform(0, 1) <= crossover_rate or j == rj:
+                    trial[j] = mutant[j]
 
-            if fitness_by_individual[new_individual] < fitness_by_individual[individual]:
-                new_population.append(new_individual)
-            else:
-                new_population.append(individual)
+            for d in range(D):
+                if trial[d] < mins[d]:
+                    trial[d] = mins[d]
+                elif trial[d] > maxs[d]:
+                    trial[d] = maxs[d]
 
-        fitness_by_individual = {individual: fitness_by_individual[individual] for individual in new_population}
-        population = new_population
+            fitness = fitness_fn(trial)
+            if fitness < fitnesses[i]:
+                population[i] = trial
+                fitnesses[i] = fitness
 
-        observe_fn(population, fitness_by_individual)
-        if terminate_fn(population, fitness_by_individual):
+        pop = [tuple(population[i]) for i in range(population_size)]
+        fitness_by_individual = {tuple(population[i]): fitnesses[i] for i in range(population_size)}
+
+        observe_fn(pop, fitness_by_individual)
+        if terminate_fn(pop, fitness_by_individual):
             break
 
-    return population
+    return min(pop, key=fitness_by_individual.get)
 
 
 def particle_swarm_optimization(
@@ -90,9 +104,7 @@ def particle_swarm_optimization(
         mins: List[float], maxs: List[float],
         population_size=40, c1=0.5 + log(2), c2=0.5 + log(2), omega=1 / (2 * log(2)),
 ) -> Individual:
-    """
-    Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO improvements
-    """
+    """Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO improvements"""
 
     def hypersphere(center, radius):
         offset = numpy.random.rand(len(center))
@@ -166,7 +178,6 @@ def particle_swarm_optimization(
                 if fitnesses[i] < local_best_fitness:
                     local_best = position.copy()
                     local_best_fitness = fitnesses[i]
-                    print(local_best_fitness, local_best)
 
         population = [tuple(positions[i]) for i in range(population_size)]
         fitness_by_individual = {tuple(positions[i]): fitnesses[i] for i in range(population_size)}
