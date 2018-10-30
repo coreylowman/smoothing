@@ -1,5 +1,7 @@
 from typing import Callable, List, Tuple, Dict
 import random
+from math import log
+import numpy
 
 Individual = Tuple[float]
 Population = List[Individual]
@@ -15,7 +17,7 @@ def genetic_algorithm(
         crossover_fn: Callable[[Population], Population],
         mutation_fn: Callable[[Individual], Individual],
         replace_fn: Callable[[Population, Population, PopulationFitness], Population],
-) -> Population:
+) -> Individual:
     population = initialize_fn()
     population_size = len(population)
     fitness_by_individual = {individual: fitness_fn(individual) for individual in population}
@@ -37,7 +39,7 @@ def genetic_algorithm(
         if terminate_fn(population, fitness_by_individual):
             break
 
-    return population
+    return min(population, key=fitness_by_individual.get)
 
 
 def differential_evolution(
@@ -46,7 +48,7 @@ def differential_evolution(
         initialize_fn: Callable[[], Population],
         fitness_fn: Callable[[Individual], float],
         crossover_rate: float, differential_weight: float,
-) -> Population:
+) -> Individual:
     population = initialize_fn()
     fitness_by_individual = {individual: fitness_fn(individual) for individual in population}
 
@@ -84,52 +86,93 @@ def differential_evolution(
 def particle_swarm_optimization(
         terminate_fn: Callable[[Population, PopulationFitness], bool],
         observe_fn: Callable[[Population, PopulationFitness], None],
-        initialize_fn: Callable[[], Population],
-        velocity_initialize_fn: Callable[[], Tuple[float]],
         fitness_fn: Callable[[Individual], float],
-        current_weight: float = 1.0, previous_weight: float = 2.0, global_weight: float = 2.0,
-) -> Population:
-    population = initialize_fn()
-    fitness_by_individual = {individual: fitness_fn(individual) for individual in population}
+        mins: List[float], maxs: List[float],
+        population_size=40, c1=0.5 + log(2), c2=0.5 + log(2), omega=1 / (2 * log(2)),
+) -> Individual:
+    """
+    Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO improvements
+    """
 
-    best_by_particle = {i: individual for i, individual in enumerate(population)}
-    velocity_by_particle = {i: velocity_initialize_fn() for i, individual in enumerate(population)}
+    def hypersphere(center, radius):
+        offset = numpy.random.rand(len(center))
+        return center + (radius * random.uniform(0, 1)) * offset / numpy.linalg.norm(offset)
 
-    global_best = max(population, key=fitness_by_individual.get)
+    positions = []
+    velocities = []
+    fitnesses = []
+    personal_bests = []
+    personal_bests_fitnesses = []
+
+    D = len(mins)
+
+    for i in range(population_size):
+        position = numpy.zeros(D)
+        velocity = numpy.zeros(D)
+        for d in range(D):
+            position[d] = random.uniform(mins[d], maxs[d])
+            velocity[d] = (random.uniform(mins[d], maxs[d]) - position[d]) / 2.0
+
+        positions.append(position)
+        velocities.append(velocity)
+        fitnesses.append(fitness_fn(position))
+        personal_bests.append(position)
+        personal_bests_fitnesses.append(fitnesses[-1])
+
+    local_best_i = min(range(population_size), key=lambda i: fitnesses[i])
+    local_best = positions[local_best_i].copy()
+    local_best_fitness = fitnesses[local_best_i]
 
     while True:
-        for particle in velocity_by_particle:
-            position = population[particle]
-            previous_best = best_by_particle[particle]
-            velocity = velocity_by_particle[particle]
+        for i in range(population_size):
+            position = positions[i]
+            velocity = velocities[i]
+            personal_best = personal_bests[i]
 
-            new_velocity = []
-            for d in range(len(particle)):
-                r_p = random.uniform(0, 1)
-                r_g = random.uniform(0, 1)
+            u1 = numpy.random.rand(D)
+            u2 = numpy.random.rand(D)
 
-                current_term = current_weight * velocity[d]
-                previous_term = previous_weight * r_p * (previous_best[d] - position[d])
-                global_term = global_weight * r_g * (global_best[d] - position[d])
+            p = position + c1 * u1 * (personal_best - position)
+            l = position + c2 * u2 * (local_best - position)
+            g = (position + p + l) / 3
 
-                new_velocity.append(current_term + previous_term + global_term)
-            velocity = tuple(new_velocity)
-            velocity_by_particle[particle] = velocity
+            h = hypersphere(g, numpy.linalg.norm(g - position))
 
-            new_position = []
-            for d in range(len(particle)):
-                new_position.append(position[d] + velocity[d])
-            new_position = tuple(new_position)
+            velocity *= omega
+            velocity += h - position
 
-            fitness_by_individual[new_position] = fitness_fn(new_position)
-            if fitness_by_individual[new_position] < fitness_by_individual[previous_best]:
-                best_by_particle[particle] = new_position
-                if fitness_by_individual[new_position] < fitness_by_individual[global_best]:
-                    global_best = new_position
-            population[particle] = new_position
+            for d in range(D):
+                if velocity[d] < -maxs[d]:
+                    velocity[d] = -maxs[d]
+                elif velocity[d] > maxs[d]:
+                    velocity[d] = maxs[d]
+
+            position += velocity
+
+            for d in range(D):
+                if position[d] < mins[d]:
+                    position[d] = mins[d]
+                    velocity[d] = 0
+                elif position[d] > maxs[d]:
+                    position[d] = maxs[d]
+                    velocity[d] = 0
+
+            fitnesses[i] = fitness_fn(position)
+
+            if fitnesses[i] < personal_bests_fitnesses[i]:
+                personal_bests[i] = position.copy()
+                personal_bests_fitnesses[i] = fitnesses[i]
+
+                if fitnesses[i] < local_best_fitness:
+                    local_best = position.copy()
+                    local_best_fitness = fitnesses[i]
+                    print(local_best_fitness, local_best)
+
+        population = [tuple(positions[i]) for i in range(population_size)]
+        fitness_by_individual = {tuple(positions[i]): fitnesses[i] for i in range(population_size)}
 
         observe_fn(population, fitness_by_individual)
         if terminate_fn(population, fitness_by_individual):
             break
 
-    return population
+    return min(population, key=fitness_by_individual.get)
