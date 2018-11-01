@@ -2,6 +2,7 @@ from math import sin, cos, pi, e, exp, sqrt, floor
 from functools import reduce
 import operator
 import random
+import json
 
 
 def squared(x_i):
@@ -14,6 +15,19 @@ def prod(iterable):
 
 def sin2(x):
     return sin(x) ** 2
+
+
+def get_dimensions(f):
+    return json.loads(f.__doc__)['n']
+
+
+def get_bounds(f):
+    info = json.loads(f.__doc__)
+    if type(info['min']) == list:
+        return info['min'], info['max']
+    else:
+        n = info['n']
+        return [info['min']] * n, [info['max']] * n
 
 
 class YangFlockton:
@@ -46,27 +60,27 @@ class YaoLiuLin:
 
     @staticmethod
     def f1(x):
-        """n = 30, x_i \in [-100, 100], f_min = 0"""
+        """{"n": 30, "min": -100, "max": 100, "f_min": 0}"""
         return sum(map(squared, x))
 
     @staticmethod
     def f2(x):
-        """n = 30, x_i \in [-10, 10], f_min = 0"""
+        """{"n": 30, "min": -10, "max": 10, "f_min": 0}"""
         return sum(map(abs, x)) + prod(map(abs, x))
 
     @staticmethod
     def f3(x):
-        """n = 30, x_i \in [-100, 100], f_min = 0"""
+        """{"n": 30, "min": -100, "max": 100, "f_min": 0}"""
         return sum(map(lambda i: sum(x[:i]) ** 2, range(len(x))))
 
     @staticmethod
     def f4(x):
-        """n = 30, x_i \in [-100, 100], f_min = 0"""
+        """{"n": 30, "min": -100, "max": 100, "f_min": 0}"""
         return max(map(abs, x))
 
     @staticmethod
     def f5(x):
-        """n = 30, x_i \in [-30, 30], f_min = 0"""
+        """{"n": 30, "min": -30, "max": 30, "f_min": 0}"""
 
         def inner_f(i):
             return 100 * (x[i + 1] - x[i] ** 2) ** 2 + (x[i] - 1) ** 2
@@ -75,12 +89,12 @@ class YaoLiuLin:
 
     @staticmethod
     def f6(x):
-        """n = 30, x_i \in [-100, 100], f_min = 0"""
+        """{"n": 30, "min": -100, "max": 100, "f_min": 0}"""
         return sum(map(lambda x_i: floor(x_i + 0.5) ** 2, x))
 
     @staticmethod
     def f7(x):
-        """n = 30, x_i \in [-1.28, 1.28], f_min = 0"""
+        """{"n": 30, "min": -1.28, "max": 1.28, "f_min": 0}"""
 
         def inner_f(i):
             return (i + 1) * (x[i] ** 4)
@@ -89,17 +103,17 @@ class YaoLiuLin:
 
     @staticmethod
     def f8(x):
-        """n = 30, x_i \in [-500, 500], f_min = -12569.5"""
+        """{"n": 30, "min": -500, "max": 500, "f_min": -12569.5}"""
         return sum(map(lambda x_i: -x_i * sin(sqrt(abs(x_i))), x))
 
     @staticmethod
     def f9(x):
-        """n = 30, x_i \in [-5.12, 5.12], f_min = 0"""
+        """{"n": 30, "min": -5.12, "max": 5.12, "f_min": 0}"""
         return sum(map(lambda x_i: x_i ** 2 - 10 * cos(2 * pi * x_i) + 10, x))
 
     @staticmethod
     def f10(x):
-        """n = 30, x_i \in [-32, 32], f_min = 0"""
+        """{"n": 30, "min": -32, "max": 32, "f_min": 0}"""
         n = len(x)
         sum1 = sum(map(squared, x))
         term1 = -20 * exp(-0.2 * sqrt(sum1 / n))
@@ -110,14 +124,14 @@ class YaoLiuLin:
 
     @staticmethod
     def f11(x):
-        """n = 30, x_i \in [-600, 600], f_min = 0"""
+        """{"n": 30, "min": -600, "max": 600, "f_min": 0}"""
         term1 = sum(map(squared, x)) / 4000.0
         term2 = prod(map(lambda i: cos(x[i] / sqrt(i + 1)), range(len(x))))
         return 1 + term1 - term2
 
     @staticmethod
     def f12(x):
-        """n = 30, x_i \in [-50, 50], f_min = 0"""
+        """{"n": 30, "min": -50, "max": 50, "f_min": 0}"""
 
         def u(x_i, a, k, m):
             if x_i > a:
@@ -140,7 +154,7 @@ class YaoLiuLin:
 
     @staticmethod
     def f13(x):
-        """n = 30, x_i \in [-50, 50], f_min = 0"""
+        """{"n": 30, "min": -50, "max": 50, "f_min": 0}"""
 
         def u(x_i, a, k, m):
             if x_i > a:
@@ -160,7 +174,7 @@ class YaoLiuLin:
 
     @staticmethod
     def f14(x):
-        """n = 2, x_i \in [-65.536, 65.536], f_min = 1"""
+        """{"n": 2, "min": -65.536, "max": 65.536, "f_min": 1}"""
         a = [
             [-32, -16, 0, 16, 32] * 5,
             [-32] * 5 + [-16] * 5 + [0] * 5 + [16] * 5 + [32] * 5,
@@ -178,7 +192,7 @@ class YaoLiuLin:
 
     @staticmethod
     def f15(x):
-        """n = 4, x_i \in [-5, 5], f_min = 0.0003075"""
+        """{"n": 4, "min": -5, "max": 5, "f_min": 0.0003075}"""
         a = [0.1957, 0.1947, 0.1735, 0.1600, 0.0844, 0.0627, 0.0456, 0.0342, 0.0323, 0.0235, 0.0246]
         b = list(map(lambda b_i: 1 / b_i, [0.25, 0.5, 1, 2, 4, 6, 8, 10, 12, 14, 16]))
 
@@ -190,12 +204,12 @@ class YaoLiuLin:
 
     @staticmethod
     def f16(x):
-        """n = 2, x_i \in [-5, 5], f_min = -1.0316285"""
+        """{"n": 2, "min": -5, "max": 5, "f_min": -1.0316285}"""
         return 4 * (x[0] ** 2) - 2.1 * (x[0] ** 4) + (x[0] ** 6) / 3 + x[0] * x[1] - 4 * (x[1] ** 2) + 4 * (x[1] ** 4)
 
     @staticmethod
     def f17(x):
-        """n = 2, [-5, 10] x [0, 15], f_min = 0.398"""
+        """{"n": 2, "min": [-5, 0], "max": [10, 15], "f_min": 0.398}"""
         term1 = (x[1] - 5.1 * (x[0] ** 2) / (4 * (pi ** 2)) + 5 * x[0] / pi - 6) ** 2
         term2 = 10 * (1 - 1 / (8 * pi)) * cos(x[0])
         term3 = 10
@@ -203,7 +217,7 @@ class YaoLiuLin:
 
     @staticmethod
     def f18(x):
-        """n = 2, x_i \in [-2, 2], f_min = 3"""
+        """{"n": 2, "min": -2, "max": 2, "f_min": 3}"""
         x1, x2 = x
         t1 = 1 + ((x1 + x2 + 1) ** 2) * (19 - 14 * x1 + 3 * (x1 ** 2) - 14 * x2 + 6 * x1 * x2 + 3 * (x2 ** 2))
         t2 = 30 + ((2 * x1 - 3 * x2) ** 2) * (18 - 32 * x1 + 12 * (x1 ** 2) + 48 * x2 - 36 * x1 * x2 + 27 * (x2 ** 2))
@@ -211,7 +225,7 @@ class YaoLiuLin:
 
     @staticmethod
     def f19(x):
-        """n = 4, x_i \in [0, 1], f_min = -3.86"""
+        """{"n": 4, "min": 0, "max": 1, "f_min": -3.86}"""
         a = [
             [3, 10, 30],
             [0.1, 10, 35],
@@ -236,7 +250,7 @@ class YaoLiuLin:
 
     @staticmethod
     def f20(x):
-        """n = 6, x_i \in [0, 1], f_min = -3.32"""
+        """{"n": 6, "min": 0, "max": 1, "f_min": -3.32}"""
         a = [
             [10, 3, 17, 3.5, 1.7, 8],
             [0.05, 10, 17, 0.1, 8, 14],
@@ -261,17 +275,17 @@ class YaoLiuLin:
 
     @staticmethod
     def f21(x):
-        """n = 4, x_i \in [0, 1], f_min = -10"""
+        """{"n": 4, "min": 0, "max": 1, "f_min": -10}"""
         return YaoLiuLin._shekel_function(x, 5)
 
     @staticmethod
     def f22(x):
-        """n = 4, x_i \in [0, 10], f_min = -10"""
+        """{"n": 4, "min": 0, "max": 10, "f_min": -10}"""
         return YaoLiuLin._shekel_function(x, 7)
 
     @staticmethod
     def f23(x):
-        """n = 4, x_i \in [0, 10], f_min = -10"""
+        """{"n": 4, "min": 0, "max": 10, "f_min": -10}"""
         return YaoLiuLin._shekel_function(x, 10)
 
     @staticmethod
@@ -297,3 +311,9 @@ class YaoLiuLin:
             return sum(map(lambda i: u[i] * u[i], range(len(u))))
 
         return -sum(map(lambda i: 1 / (dot(sub(x, a[i])) + c[i]), range(m)))
+
+
+if __name__ == '__main__':
+    import json
+
+    print(json.loads(YaoLiuLin.f23.__doc__))
