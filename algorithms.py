@@ -11,28 +11,65 @@ PopulationFitness = Dict[Individual, float]
 def genetic_algorithm(
         terminate_fn: Callable[[Population, PopulationFitness], bool],
         observe_fn: Callable[[Population, PopulationFitness], None],
-        initialize_fn: Callable[[], Population],
         fitness_fn: Callable[[Individual], float],
-        select_fn: Callable[[Population, PopulationFitness], Population],
-        crossover_fn: Callable[[Population], Population],
-        mutation_fn: Callable[[Individual], Individual],
-        replace_fn: Callable[[Population, Population, PopulationFitness], Population],
+        mins: List[float], maxs: List[float],
+        population_size: int, mutation_rate=0.01, crossover_rate=0.2, tournament_size=5,
 ) -> Individual:
-    population = initialize_fn()
-    population_size = len(population)
+    D = len(mins)
+
+    def tournament_selection(population, fitness_by_individual) -> Individual:
+        individuals = random.sample(population, tournament_size)
+        return min(individuals, key=fitness_by_individual.get)
+
+    def one_point_crossover(parent1, parent2) -> List[Individual]:
+        if random.uniform(0, 1) < crossover_rate:
+            crossover_pt = random.randrange(0, len(parent1))
+            return [
+                parent1[:crossover_pt] + parent2[crossover_pt:],
+                parent2[:crossover_pt] + parent1[crossover_pt:],
+            ]
+        else:
+            return [parent1, parent2]
+
+    def bit_mutation(individual: Individual) -> Individual:
+        def mutate(d, bit: float) -> float:
+            bit = bit + (random.uniform(-1, 1) if random.uniform(0, 1) <= mutation_rate else 0)
+            if bit < mins[d]:
+                bit = mins[d]
+            elif bit > maxs[d]:
+                bit = maxs[d]
+            return bit
+
+        return tuple(map(lambda d_b: mutate(*d_b), enumerate(individual)))
+
+    population = []
+
+    for i in range(population_size):
+        individual = [0] * D
+        for d in range(D):
+            individual[d] = random.uniform(mins[d], maxs[d])
+        population.append(tuple(individual))
+
     fitness_by_individual = {individual: fitness_fn(individual) for individual in population}
 
     while True:
-        all_children = []
+        all_children = set()
         while len(all_children) <= population_size:
-            parents = select_fn(population, fitness_by_individual)
-            children = crossover_fn(parents)
-            for child in children:
-                child = mutation_fn(child)
-                fitness_by_individual[child] = fitness_fn(child)
-                all_children.append(child)
+            # selection
+            parent1 = tournament_selection(population, fitness_by_individual)
+            parent2 = tournament_selection(population, fitness_by_individual)
 
-        population = replace_fn(population, all_children, fitness_by_individual)
+            # reproduce
+            children = one_point_crossover(parent1, parent2)
+
+            # mutation
+            for child in children:
+                child = bit_mutation(child)
+                if child not in fitness_by_individual:
+                    fitness_by_individual[child] = fitness_fn(child)
+                    all_children.add(child)
+
+        population = list(all_children)
         fitness_by_individual = {individual: fitness_by_individual[individual] for individual in population}
 
         observe_fn(population, fitness_by_individual)
