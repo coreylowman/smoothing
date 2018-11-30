@@ -39,11 +39,10 @@ class BestIndividualPrinter:
 
 
 class Population3DPlotter:
-    def __init__(self, f, min, max, multiplier=10):
+    def __init__(self, f, mins, maxs, multiplier=10):
         self.f = f
-        num_points = multiplier * (max - min)
-        x = np.linspace(min, max, num_points)
-        y = np.linspace(min, max, num_points)
+        x = np.linspace(mins[0], maxs[0], multiplier * (maxs[0] - mins[0]))
+        y = np.linspace(mins[0], maxs[0], multiplier * (maxs[1] - mins[1]))
         self.X, self.Y = np.meshgrid(x, y)
 
         self.Z = self.X.copy()

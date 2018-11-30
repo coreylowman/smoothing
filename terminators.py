@@ -1,4 +1,9 @@
-import math
+class Any:
+    def __init__(self, *terminators):
+        self.terminators = terminators
+
+    def __call__(self, population, fitness_by_individual) -> bool:
+        return any(map(lambda t: t(population, fitness_by_individual), self.terminators))
 
 
 class GenerationTerminator:
@@ -11,22 +16,20 @@ class GenerationTerminator:
         return self.generation >= self.num_generations
 
 
-class NoImprovementsTerminator:
+class ConvergenceTerminator:
     def __init__(self, num_generations, epsilon):
         self.num_generations = num_generations
-        self.generations_since_last_improvement = 0
         self.epsilon = epsilon
 
         self.bests = []
 
     def __call__(self, population, fitness_by_individual) -> bool:
-        best_individual = min(population, key=fitness_by_individual.get)
-        fitness = fitness_by_individual[best_individual]
-        self.bests.append(fitness)
+        self.bests.append(min(fitness_by_individual.values()))
+        if len(self.bests) <= self.num_generations:
+            return False
 
         recents = self.bests[-self.num_generations:]
-        avg_recent = sum(recents) / len(recents)
-        diffs = [abs(r - avg_recent) for r in recents]
-        total_diffs = sum(diffs)
+        diffs = [recents[i] - recents[i + 1] for i in range(self.num_generations - 1)]
+        avg_diff = sum(diffs) / len(recents)
 
-        return total_diffs < self.epsilon and len(self.bests) > self.num_generations
+        return avg_diff < self.epsilon

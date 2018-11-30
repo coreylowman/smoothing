@@ -30,6 +30,14 @@ def get_bounds(f):
         return [info['min']] * n, [info['max']] * n
 
 
+def get_f_min(f):
+    info = json.loads(f.__doc__)
+    return info['f_min']
+
+
+TWO_PI = 2 * pi
+
+
 class YangFlockton:
     """
     Yang, D., & Flockton, S. J. (1995). Evolutionary algorithms with a coarse-to-fine function
@@ -39,17 +47,23 @@ class YangFlockton:
 
     @staticmethod
     def f1(x):
-        """x_i \in [-5.12, 5.12]"""
-        n = len(x)
-        return n + sum(map(lambda x_i: x_i ** 2 - cos(2 * pi * x_i), x))
+        """{"n": 30, "min": -5.12, "max": 5.12, "f_min": 0}"""
+
+        def part(x_i):
+            return x_i * x_i - cos(TWO_PI * x_i)
+
+        return len(x) + sum(map(part, x))
 
     @staticmethod
     def f2(x):
-        """x_i \in [-30, 30]"""
-        n = len(x)
-        sum1 = sum(map(squared, x))
-        sum2 = sum(map(lambda x_i: cos(2 * pi * x_i), x))
-        return 20 + e - 20 * exp(-0.2 * sqrt(sum1 / n)) - exp(sum2 / n)
+        """{"n": 30, "min": -30, "max": 30, "f_min": 0}"""
+
+        def part(x_i):
+            return cos(TWO_PI * x_i)
+
+        sum1 = sum(map(squared, x)) / len(x)
+        sum2 = sum(map(part, x)) / len(x)
+        return 20 + e - 20 * exp(-0.2 * sqrt(sum1)) - exp(sum2)
 
 
 class YaoLiuLin:
@@ -142,7 +156,7 @@ class YaoLiuLin:
                 return 0
 
         n = len(x)
-        y = type(x)(map(lambda x_i: 1 + 0.25 * (x_i + 1), x))
+        y = tuple(map(lambda x_i: 1 + 0.25 * (x_i + 1), x))
 
         term1 = 10 * sin2(pi * y[0])
         term2 = sum(map(lambda i: ((y[i] - 1) ** 2) * (1 + 10 * sin2(pi * y[i + 1])), range(n - 1)))
@@ -305,7 +319,7 @@ class YaoLiuLin:
         ]
 
         def sub(u, v):
-            return type(u)(map(lambda i: u[i] - v[i], range(len(u))))
+            return tuple(map(lambda i: u[i] - v[i], range(len(u))))
 
         def dot(u):
             return sum(map(lambda i: u[i] * u[i], range(len(u))))
