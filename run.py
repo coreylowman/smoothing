@@ -2,9 +2,6 @@ from algorithms import *
 from terminators import *
 from functions import *
 from smoothing import *
-from observers import *
-from math import sqrt, log
-import matplotlib.pyplot as plt
 
 args_by_name = {
     'none': {'sample_fn': None, 'size': 0.5, 'num_points': 10, 'reduction_frequency': 80, 'reduction_pct': 0.3,
@@ -15,19 +12,22 @@ args_by_name = {
                'reduction_pct': 0.3},
     'F_{S2}': {'sample_fn': sphere_sample, 'size': 1.0, 'num_points': 10, 'reduction_frequency': 50,
                'reduction_pct': 1.0},
-    'F_{S3}': {'sample_fn': sphere_sample, 'size': 1.0, 'num_points': 10, 'reduction_frequency': 5,
-               'reduction_pct': 0.1},
+    'F_{S3}': {'sample_fn': sphere_sample, 'size': 1.0, 'num_points': 10, 'reduction_frequency': 80,
+               'reduction_pct': 0.3},
 }
 
 algs_by_name = {
-    'GA': genetic_algorithm,
+    # 'GA': genetic_algorithm,
     # 'ES': evolution_strategy,
     # 'DE': differential_evolution,
 }
 
-smoother_name = 'F_{S3}'
+smoother_name = 'none'
 
-for f in [YangFlockton.f1, YangFlockton.f2]:
+for f in [
+    YangFlockton.f1,
+    YangFlockton.f2,
+]:
     mins, maxs = get_bounds(f)
     f_min = get_f_min(f)
 
@@ -35,16 +35,16 @@ for f in [YangFlockton.f1, YangFlockton.f2]:
 
     for alg_name, alg in algs_by_name.items():
         for i in range(30):
-            # term = Any(ConvergenceTerminator(100, 0.001), GenerationTerminator(2000))
-            term = GenerationTerminator(2000)
-            smoother = Smoother(fitness_fn=f, **args_by_name[smoother_name])
-            fitness_by_individual = alg(term, smoother, mins, maxs, observe_fn=smoother.observe)
+            term = Any(ConvergenceTerminator(100, 0.001), GenerationTerminator(2000))
+            smoother = Smoother(terminate_fn=term, fitness_fn=f, **args_by_name[smoother_name])
+            fitness_by_individual = alg(smoother.terminate, smoother, mins, maxs,
+                                        step_size_fn=smoother.step_size, observe_fn=smoother.observe)
 
             population = list(fitness_by_individual.keys())
             best_fitness = min(map(f, population))
 
             results = [smoother_name, f.__name__, alg_name, smoother.function_evaluations, smoother.total_generations,
                        best_fitness]
-            # with open('results.csv', 'a') as fp:
-            #     fp.write(','.join(list(map(str, results))) + '\n')
+            with open('results.csv', 'a') as fp:
+                fp.write(','.join(list(map(str, results))) + '\n')
             print(i, results)

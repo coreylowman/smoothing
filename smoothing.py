@@ -1,4 +1,4 @@
-from algorithms import Individual
+from algorithms import Individual, TerminateFn
 from typing import Callable
 import random
 import numpy
@@ -21,13 +21,14 @@ class Smoother:
     def __init__(self,
                  fitness_fn: Callable[[Individual], float],
                  sample_fn: Callable[[Individual, float], Individual],
+                 terminate_fn: TerminateFn,
                  size: float, num_points: int,
                  reduction_pct: float, reduction_frequency: int,
                  on=True):
         self._fitness_fn = fitness_fn
 
         self._sample_fn = sample_fn
-        self._sample_area_size = size
+        self._sample_area_size = size if on else 0.0
         self._num_sample_points = num_points
         self._sample_area_reduction_pct = reduction_pct
         self._sample_reduction_frequency = reduction_frequency
@@ -37,6 +38,8 @@ class Smoother:
         self.total_generations = 0
 
         self._fn = self._smoothed_fitness_fn if on else self._normal_fitness_fn
+
+        self.terminate_fn = terminate_fn
 
     def __call__(self, x):
         return self._fn(x)
@@ -52,6 +55,9 @@ class Smoother:
         points.append(x)
         return sum(map(self._normal_fitness_fn, points)) / len(points)
 
+    def step_size(self) -> float:
+        return self._sample_area_size
+
     def observe(self, population, fitness_by_individual):
         self._generations += 1
         self.total_generations += 1
@@ -60,5 +66,9 @@ class Smoother:
             self._generations = 0
 
         fitnesses = list(map(self._normal_fitness_fn, population))
-        print(min(fitness_by_individual.values()), min(fitnesses), sum(fitnesses) / len(fitness_by_individual),
-              self._generations, self._sample_area_size, self.total_generations)
+        print(min(fitness_by_individual.values()), min(fitnesses),
+              self._sample_area_size, self.total_generations, self.function_evaluations)
+
+    def terminate(self, population, fitness_by_individual) -> bool:
+        raw_fitness_by_individual = {i: self._fitness_fn(i) for i in population}
+        return self.terminate_fn(population, raw_fitness_by_individual)

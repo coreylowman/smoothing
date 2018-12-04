@@ -26,7 +26,8 @@ PopulationFitness = Dict[Individual, float]
 TerminateFn = Callable[[Population, PopulationFitness], bool]
 FitnessFn = Callable[[Individual], float]
 ObserveFn = Callable[[Population, PopulationFitness], None]
-AlgorithmFn = Callable[[TerminateFn, FitnessFn, List[float], List[float], ObserveFn], PopulationFitness]
+StepSizeFn = Callable[[], float]
+AlgorithmFn = Callable[[TerminateFn, FitnessFn, List[float], List[float], ObserveFn, StepSizeFn], PopulationFitness]
 
 
 def subspace_search(alg_fn: AlgorithmFn, gens=80) -> AlgorithmFn:
@@ -34,13 +35,14 @@ def subspace_search(alg_fn: AlgorithmFn, gens=80) -> AlgorithmFn:
             terminate_fn: Callable[[Population, PopulationFitness], bool],
             fitness_fn: Callable[[Individual], float],
             mins: List[float], maxs: List[float],
-            observe_fn: Callable[[Population, PopulationFitness], None] = None,
+            observe_fn: ObserveFn = None,
+            step_size_fn: StepSizeFn = None,
     ) -> PopulationFitness:
         D = len(mins)
 
         while True:
             fitness_by_individual = alg_fn(Any(terminate_fn, GenerationTerminator(gens)), fitness_fn, mins, maxs,
-                                           observe_fn)
+                                           observe_fn, step_size_fn)
             population = list(fitness_by_individual.keys())
             if terminate_fn(population, fitness_by_individual):
                 return fitness_by_individual
@@ -60,11 +62,11 @@ def subspace_search(alg_fn: AlgorithmFn, gens=80) -> AlgorithmFn:
 
 def genetic_algorithm(
         terminate_fn: TerminateFn, fitness_fn: FitnessFn, mins: List[float], maxs: List[float],
-        observe_fn: ObserveFn = None,
+        observe_fn: ObserveFn = None, step_size_fn: StepSizeFn = None,
         population_size=100, crossover_rate=0.2, tournament_size=5,
 ) -> PopulationFitness:
     D = len(mins)
-    mutation_rate = 2 / D
+    mutation_rate = 1 / D
 
     def tournament_selection(population, fitness_by_individual) -> Individual:
         individuals = random.sample(population, tournament_size)
@@ -93,7 +95,9 @@ def genetic_algorithm(
     def creep_mutation(individual: Individual) -> Individual:
         def mutate(d, bit: float) -> float:
             if random.uniform(0, 1) <= mutation_rate:
-                return bit + random.gauss(0, (maxs[d] - mins[d]) / 200)
+                noise = random.gauss(0, 1.0)
+                # noise += step_size_fn() * noise
+                return bit + noise
             else:
                 return bit
 
@@ -135,7 +139,7 @@ def genetic_algorithm(
 
 def evolution_strategy(
         terminate_fn: TerminateFn, fitness_fn: FitnessFn, mins: List[float], maxs: List[float],
-        observe_fn: ObserveFn = None,
+        observe_fn: ObserveFn = None, step_size_fn: StepSizeFn = None,
         mu=30, delta=200,
 ) -> PopulationFitness:
     """
@@ -164,7 +168,6 @@ def evolution_strategy(
         all_children = []
         while len(all_children) != delta:
             child = [0.0] * D
-            deviation = 0.0
 
             n = random.gauss(0, 1)
 
@@ -175,7 +178,6 @@ def evolution_strategy(
 
             # mutate standard deviation
             deviation *= exp(tau_prime * n + tau * random.gauss(0, 1))
-            deviation = clamp(deviation, 0.05, 3.0)
 
             obj_parent1 = random.choice(population)
             obj_parent2 = random.choice(population)
@@ -207,7 +209,7 @@ def evolution_strategy(
 
 def differential_evolution(
         terminate_fn: TerminateFn, fitness_fn: FitnessFn, mins: List[float], maxs: List[float],
-        observe_fn: ObserveFn = None,
+        observe_fn: ObserveFn = None, step_size_fn: StepSizeFn = None,
         population_size=20, crossover_rate=0.2, f=0.5,
 ) -> PopulationFitness:
     """Differential Evolution – A Simple and Efficient Heuristic for Global Optimization over Continuous Spaces"""
@@ -258,7 +260,7 @@ def differential_evolution(
 
 def particle_swarm_optimization(
         terminate_fn: TerminateFn, fitness_fn: FitnessFn, mins: List[float], maxs: List[float],
-        observe_fn: ObserveFn = None,
+        observe_fn: ObserveFn = None, step_size_fn: StepSizeFn = None,
         population_size=40, c1=0.5 + log(2), c2=0.5 + log(2), omega=1 / (2 * log(2)),
 ) -> PopulationFitness:
     """Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO improvements"""
